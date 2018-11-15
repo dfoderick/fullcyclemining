@@ -36,7 +36,7 @@ def stats(miner: Miner):
 
         thecall.start()
         #jstats = api.stats()
-        stats_and_pools = api.command('stats+pools')
+        stats_and_pools = api.command('stats+pools+devs')
         thecall.stop()
         if 'stats' in stats_and_pools:
             jstats = stats_and_pools['stats'][0]
@@ -51,11 +51,10 @@ def stats(miner: Miner):
         else:
             miner_software = parse_miner_software(jstats)
             if miner_software.startswith('sgminer'):
-                jstats = stats_and_pools['STATS']
-                jsonstats = jstats
+                jstats = stats_and_pools['stats'][0]['STATS']
+                jdevs = stats_and_pools['devs'][0]['DEVS']
                 status = jstats[0]
-                jstatus = stats_and_pools['STATUS']
-                minerinfo = helpers.antminerhelper.parse_statistics_inno(entity, jsonstats, status)
+                minerinfo = parse_statistics_inno(entity, jstats, jdevs, status)
 
             else:
                 status = jstats['STATS'][0]
@@ -65,7 +64,7 @@ def stats(miner: Miner):
 
                 #build MinerStatistics from stats
                 parse_statistics(entity, jsonstats, status)
-                minerpool = parse_minerpool(miner, stats_and_pools['pools'][0])
+            minerpool = parse_minerpool(miner, stats_and_pools['pools'][0])
 
             return entity, minerinfo, thecall, minerpool
     except BaseException as ex:
@@ -80,14 +79,14 @@ def parse_miner_software(jsonstats):
             return status[0]['Description']
     return 'unknown'
 
-def parse_statistics_inno(entity, jsonstats, status):
+def parse_statistics_inno(entity, jsonstats, jsondevs, status):
     miner_stats = [x for x in jsonstats if 'ID' in x and x['ID'].startswith('HLT')]
-
+    miner_devs = [x for x in jsondevs if 'ID' in x]
     entity.minercount = len(miner_stats)
     elapsed =[x['Elapsed'] for x in miner_stats]
     entity.elapsed = max(elapsed)
-    entity.currenthash = sum([int(float(x['MHS av'])) for x in miner_stats])
-    entity.hash_avg = sum([int(float(x['MHS av'])) for x in miner_stats])
+    entity.currenthash = sum([int(float(x['MHS 1m'])) for x in miner_devs])
+    entity.hash_avg = sum([int(float(x['MHS av'])) for x in miner_devs])
     entity.hardware_errors = sum([sum({v for (k, v) in y.items() if k.endswith('HW errors')}) for y in miner_stats])
 
     #entity.frequency = jsonstats['frequency']
