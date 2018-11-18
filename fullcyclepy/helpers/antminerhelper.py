@@ -57,13 +57,16 @@ def stats(miner: Miner):
                 minerinfo = parse_statistics_inno(entity, jstats, jdevs, status)
 
             else:
-                status = jstats['STATS'][0]
-                jsonstats = jstats['STATS'][1]
+                #status = jstats['STATS'][0]
+                #jsonstats = jstats['STATS'][1]
+
+                jstats = stats_and_pools['stats'][0]['STATS'][1]
+                status = stats_and_pools['stats'][0]['STATS'][0]
 
                 minerinfo = parse_minerinfo(status)
 
                 #build MinerStatistics from stats
-                parse_statistics(entity, jsonstats, status)
+                parse_statistics(entity, jstats, status)
             minerpool = parse_minerpool(miner, stats_and_pools['pools'][0])
 
             return entity, minerinfo, thecall, minerpool
@@ -103,18 +106,19 @@ def parse_statistics_inno(entity, jsonstats, jsondevs, status):
 def parse_statistics(entity, jsonstats, status):
     entity.minercount = int(jsonstats['miner_count'])
     entity.elapsed = int(jsonstats['Elapsed'])
-    entity.currenthash = int(float(jsonstats['GHS 5s']))
-    entity.hash_avg = int(float(jsonstats['GHS av']))
+    entity.currenthash = int(float(jsonstats['GHS 5s']))*1000
+    entity.hash_avg = int(float(jsonstats['GHS av']))*1000
     if 'Hardware Errors' in jsonstats:
         entity.hardware_errors = int(float(jsonstats['Hardware Errors']))
     entity.frequency = jsonstats['frequency']
 
-    frequencies = {k:v for (k, v) in jsonstats.items() if k.startswith('freq_avg') and v != 0}
-    entity.frequency = str(int(sum(frequencies.values()) / len(frequencies)))
+#    frequencies = {k:v for (k, v) in jsonstats.items() if k.startswith('freq_avg') and v != 0}
+#    entity.frequency = str(int(sum(frequencies.values()) / len(frequencies)))
 
-    controllertemps = {k:v for (k, v) in jsonstats.items() if k in ['temp6', 'temp7', 'temp8']}
-    entity.controllertemp = max(controllertemps.values())
-    parse_board_temps(entity, jsonstats)
+    #controllertemps = {k:v for (k, v) in jsonstats.items() if k in ['temp6', 'temp7', 'temp8']}
+    #entity.controllertemp = max(controllertemps.values())
+    entity.controllertemp = int(float(jsonstats['temp_max']))
+    parse_board_temps(entity, jsonstats, 'temp2_')
     parse_fans(entity, jsonstats)
     parse_board_status(entity, jsonstats)
 
